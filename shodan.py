@@ -11,8 +11,12 @@ import os, sys, logging, getopt, StringIO, datetime, git
 from subprocess import call
 
 # config
+
 DEBUG = True
-HDT_PATH = '/Users/michael/Documents/dev/hdt/hdt-java'
+
+# here you need to specify the path where you've build http://code.google.com/p/hdt-java/ 
+# try ./rdf2hdt.sh data/test.nt data/test.hdt in this directory if things don't work
+HDT_PATH = '/Users/michael/Documents/dev/hdt/hdt-java/'
 
 if DEBUG:
 	FORMAT = '%(asctime)-0s %(levelname)s %(message)s [at line %(lineno)d]'
@@ -27,34 +31,37 @@ def init_store(storename):
 	uhome = os.path.expanduser('~') # user home
 	storedir = os.path.join(uhome, storename)
 	storent = os.path.join(storedir, 'datastore.nt')
+	storehdt = os.path.join(storedir, 'datastore.hdt')
 	now = datetime.datetime.now()
-	# storehdt = os.path.join(storedir, 'datastore.hdt')
 	
 	if DEBUG: logging.debug('initialising datastore in: %s' %os.path.abspath(storedir))
 
 	if not os.path.exists(storedir):
 		os.makedirs(storedir)
-		
+	
+	# create the original store in NTriple format
 	ds = open(storent, 'w')
 	ds.write(''.join(['<file://', os.path.abspath(storedir), '> <http://purl.org/dc/terms/title> "', storename, '" .\n']))
 	ds.write(''.join(['<file://', os.path.abspath(storedir), '> <http://purl.org/dc/terms/creator> <https://github.com/mhausenblas/shodan> .\n']))
 	ds.write(''.join(['<file://', os.path.abspath(storedir), '> <http://purl.org/dc/terms/created> "', now.strftime('%Y-%m-%d'), '" .\n']))
 	ds.close()
 	
+	# convert the original store in NTriple to HDT
+	convert2HDT(os.path.abspath(storent), os.path.abspath(storehdt))
+	
+	# commit both store files into git repo
 	g = git.Git(os.path.abspath(storedir)) 
 	g.init()
 	g.add(os.path.abspath(storent))
+	g.add(os.path.abspath(storehdt))
 	commitmsg = 'init store %s' %storename
 	g.commit(m=commitmsg)
 
-# NOTE: can't build HDT due to some funny compiler error, need to check back with Mario
-# for now assume RDF2HDT is done manually (via UI)
 def convert2HDT(ntdoc, htdoc):
 	"""Converts an RDF NTriple document into an HDT document and returns result code from call."""
 	params = '%s %s' %(ntdoc, htdoc)
-	cmd = ''.join(['cd ', HDT_PATH, ' '])
-	cmd += ''.join(['java -server -Xms1024M -Xmx1024M -classpath "', HDT_PATH, '/bin:',  HDT_PATH, '/lib/*" org.rdfhdt.hdt.tools.RDF2HDT ', params])
-	if DEBUG: logging.debug('EXECUTE: %s' %cmd)
+	cmd = ''.join(['java -server -Xms1024M -Xmx1024M -classpath "', HDT_PATH, 'bin:',  HDT_PATH, 'lib/*" org.rdfhdt.hdt.tools.RDF2HDT ', params])
+	if DEBUG: logging.debug('Calling HDT converter with:\n%s' %cmd)
 	return call(cmd, shell=True)
 
 def usage():
