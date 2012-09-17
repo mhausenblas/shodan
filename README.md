@@ -12,7 +12,7 @@ Let's create a new RDF datastore first:
 	
 You can check if this has worked out: go to your home directory where you should find a new directory named with the store name, `ex1` in our case.
 
-Now, lets add some triples. Shodan assumes you have the data in [RDF NTriples](http://www.w3.org/TR/rdf-testcases/#ntriples "RDF Test Cases") format in a file. I'm going to use the test data supplied with shodan and go like:
+Now, lets add some triples. Shodan assumes you have the data in [RDF NTriples](http://www.w3.org/TR/rdf-testcases/#ntriples "RDF Test Cases") format in a file. I'm going to use the [test data](https://github.com/mhausenblas/shodan/tree/master/data) supplied with shodan and go like:
 
 	$ python shodan.py --add ex1:data/input_data_0.nt
 	2012-09-17T04:27:28 INFO Adding data to store [ex1] from input file [data/input_data_0.nt]
