@@ -26,16 +26,17 @@ else:
 	logging.basicConfig(level=logging.INFO, format=FORMAT, datefmt='%Y-%m-%dT%I:%M:%S')
 
 
+###############################################################################
+# Shodan API
+
 def init_store(storename):
-	"""Creates a directory in user's home containing RDF NTriple & HDT doc, and inits git repo with it."""
+	"""Creates a directory in user's home containing RDF NTriple & HDT doc, and inits/commits to git repo."""
 	uhome = os.path.expanduser('~') # user home
 	storedir = os.path.join(uhome, storename)
 	storent = os.path.join(storedir, 'datastore.nt')
 	storehdt = os.path.join(storedir, 'datastore.hdt')
 	now = datetime.datetime.now()
 	
-	if DEBUG: logging.debug('initialising datastore in: %s' %os.path.abspath(storedir))
-
 	if not os.path.exists(storedir):
 		os.makedirs(storedir)
 	
@@ -46,15 +47,46 @@ def init_store(storename):
 	ds.write(''.join(['<file://', os.path.abspath(storedir), '> <http://purl.org/dc/terms/created> "', now.strftime('%Y-%m-%d'), '" .\n']))
 	ds.close()
 	
+	# init git repo and commit both store files
+	g = git.Git(os.path.abspath(storedir)) 
+	g.init()
+	convertNCommit(storedir, storent, storehdt, 'init store %s' %storename)
+	
+	if DEBUG: logging.debug('Initialised datastore in [%s]' %os.path.abspath(storedir))
+
+def add_store(storename, data):
+	"""Adds NTriples data to an existing store, converts to HDT and commits to git repo."""
+	uhome = os.path.expanduser('~') # user home
+	storedir = os.path.join(uhome, storename)
+	storent = os.path.join(storedir, 'datastore.nt')
+	storehdt = os.path.join(storedir, 'datastore.hdt')
+	
+	# append NTriples data to existing file
+	try:
+		with open(storent, "a") as ntfile:
+			ntfile.write(data)
+	except IOError as err:
+		# print str(err)
+		logging.error('The datastore [%s] does not exist - generate it first, please!' %storename)
+		usage()
+		sys.exit(2)
+	
+	convertNCommit(storedir, storent, storehdt, 'updated store %s' %storename)
+	if DEBUG: logging.debug('Updated datastore [%s] with:\n%s' %(storename, data))
+
+
+###############################################################################
+# Shodan utility functions
+
+def convertNCommit(storedir, storent, storehdt, commitmsg):
+	"""Converts an RDF NTriple document into an HDT document and commits it to the git repo."""
 	# convert the original store in NTriple to HDT
 	convert2HDT(os.path.abspath(storent), os.path.abspath(storehdt))
 	
 	# commit both store files into git repo
 	g = git.Git(os.path.abspath(storedir)) 
-	g.init()
 	g.add(os.path.abspath(storent))
 	g.add(os.path.abspath(storehdt))
-	commitmsg = 'init store %s' %storename
 	g.commit(m=commitmsg)
 
 def convert2HDT(ntdoc, htdoc):
@@ -64,14 +96,24 @@ def convert2HDT(ntdoc, htdoc):
 	if DEBUG: logging.debug('Calling HDT converter with:\n%s' %cmd)
 	return call(cmd, shell=True)
 
+def parseNTFile(ntdoc):
+	"""Reads in an RDF NTriple file from file system, returns a string of the content"""
+	file = open(ntdoc, 'r')
+	ret = file.read() # for now, simply read content - should validate the content(!)
+	file.close()
+	return ret
+
 def usage():
 	print('Usage: python shodan.py --init {storename} | --add | --remove | --match')
-	print('Example: python shodan.py --init ex1')
+	print('Example 1 - init a datastore:\n  python shodan.py --init ex1')
+	print('Example 2 - add triples to an existing datastore:\n  python shodan.py --add ex1:data/input_data_0.nt')
+
+
 
 
 if __name__ == '__main__':
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], 'hi:a:', ['help', 'init', 'add'])
+		opts, args = getopt.getopt(sys.argv[1:], 'hi:a:', ['help', 'init=', 'add='])
 		for opt, arg in opts:
 			if opt in ('-h', '--help'):
 				usage()
@@ -81,9 +123,9 @@ if __name__ == '__main__':
 				logging.info('Creating new store [%s]' %storename)
 				init_store(storename)
 			elif opt in ('-a', '--add'):
-				params = arg.split(',')
-				logging.info('Adding data to store [%s] %s' %(params[0], params[1]))
-				convert2HDT(params[0], params[1])
+				params = arg.split(':')
+				logging.info('Adding data to store [%s] from input file [%s]' %(params[0], params[1]))
+				add_store(params[0], parseNTFile(params[1]))
 	except getopt.GetoptError, err:
 		print str(err)
 		usage()
