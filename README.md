@@ -19,6 +19,21 @@ Now, lets add some triples. Shodan assumes you have the data in [RDF NTriples](h
 	2012-09-17T04:27:28 DEBUG Updated datastore [ex1] with:
 	<http://example.org/#m> <http://xmlns.com/foaf/0.1/knows> <http://example.org/#r> .
 
+OK, next we want to query the store. You'd do it as follows (again, using the query provided in [test](https://github.com/mhausenblas/shodan/tree/master/data)):
+
+	$ python shodan.py -q ex1:data/query_0.sparql 
+	2012-09-18T08:51:14 INFO Querying store [ex1] with SPARQL query from input file [data/query_0.sparql]
+	2012-09-18T08:51:14 DEBUG Executing HDT Jena SPARQL query with:
+	SELECT * WHERE { ?s ?p ?o } LIMIT 2
+	Triples served: 3
+	--------------------------------------------------------------------------------------------------------------
+	| s                           | p                                  | o                                       |
+	==============================================================================================================
+	| <file:///Users/michael/ex1> | <http://purl.org/dc/terms/created> | "\"2012-09-18\""                        |
+	| <file:///Users/michael/ex1> | <http://purl.org/dc/terms/creator> | <https://github.com/mhausenblas/shodan> |
+	--------------------------------------------------------------------------------------------------------------
+
+
 ## Dependencies
 
 * [HDT](http://www.rdfhdt.org/), download and build [HDT Java](http://code.google.com/p/hdt-java/)
