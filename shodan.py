@@ -116,7 +116,7 @@ def parseNTFile(ntdoc):
 	file = open(ntdoc, 'r')
 	ret = file.read() # for now, simply read content - should validate the content(!)
 	file.close()
-	return ret
+	return '\n' + ret
 
 def parseSPARQLFile(sparqldoc):
 	"""Reads in SPARQL file from file system, returns a string of the content"""
