@@ -7,8 +7,7 @@
 @since: 2012-09-16
 @status: first API done
 """
-import os, sys, logging, getopt, StringIO, datetime, git
-from subprocess import call
+import os, sys, logging, getopt, StringIO, datetime, git, shlex, subprocess
 
 # config
 
@@ -73,6 +72,7 @@ def add_store(storename, data):
 		sys.exit(2)
 	
 	convertNCommit(storedir, storent, storehdt, 'updated store %s' %storename)
+	
 	if DEBUG: logging.debug('Updated datastore [%s] with:\n%s' %(storename, data))
 
 def query_store(storename, data):
@@ -80,8 +80,9 @@ def query_store(storename, data):
 	uhome = os.path.expanduser('~') # user home
 	storedir = os.path.join(uhome, storename)
 	storehdt = os.path.join(storedir, 'datastore.hdt')
+	return query2HDT(storehdt, data)
 
-	query2HDT(storehdt, data)
+
 
 ###############################################################################
 # Shodan utility functions
@@ -100,16 +101,26 @@ def convertNCommit(storedir, storent, storehdt, commitmsg):
 def convert2HDT(ntdoc, htdoc):
 	"""Converts an RDF NTriple document into an HDT document and returns result code from call."""
 	params = '%s %s' %(ntdoc, htdoc)
-	cmd = ''.join(['java -server -Xms1024M -Xmx1024M -classpath "', HDT_PATH, 'bin:',  HDT_PATH, 'lib/*" org.rdfhdt.hdt.tools.RDF2HDT ', params])
+	cp = ' -classpath "%sbin:%slib/*"' %(HDT_PATH, HDT_PATH)
+	cmd = ''.join(['java -server -Xms1024M -Xmx1024M', cp, ' org.rdfhdt.hdt.tools.RDF2HDT ', params])
 	if DEBUG: logging.debug('Calling HDT converter with:\n%s' %cmd)
-	return call(cmd, shell=True)
+	args = shlex.split(cmd)
+	s = subprocess.Popen(args, stderr=subprocess.STDOUT, stdout=subprocess.PIPE).communicate()[0]
+	if DEBUG: logging.debug('Result of HDT converter:\n%s' %s)
+	return s
+	
 
 def query2HDT(htdoc, sparql):
 	"""Queries an RDF HDT document using hdt-jena."""
 	params = '%s "%s"' %(htdoc, sparql)
-	cmd = ''.join(['java -d64 -server -Xmx1024M -classpath "', HDT_JENA_PATH, 'bin:',  HDT_JENA_PATH, 'lib/*:', HDT_PATH, 'bin:',  HDT_PATH, 'lib/*" HDTSparqlAPI ', params])
+	cp = ' -classpath "%sbin:%slib/*:%sbin:%slib/*"' %(HDT_JENA_PATH, HDT_JENA_PATH, HDT_PATH, HDT_PATH)
+	cmd = ''.join(['java -server -Xms1024M -Xmx1024M', cp, ' HDTSparqlAPI ', params])
 	if DEBUG: logging.debug('Executing HDT Jena SPARQL query with:\n%s' %cmd)
-	return call(cmd, shell=True)
+	args = shlex.split(cmd)
+	FNULL = open('/dev/null', 'w')
+	s = subprocess.Popen(args, stderr=FNULL, stdout=subprocess.PIPE).communicate()[0]
+	if DEBUG: logging.debug('Result of HDT Jena SPARQL query:\n%s' %s)
+	return s
 
 def parseNTFile(ntdoc):
 	"""Reads in an RDF NTriple file from file system, returns a string of the content"""
@@ -150,7 +161,7 @@ if __name__ == '__main__':
 			elif opt in ('-q', '--query'):
 				params = arg.split(':')
 				logging.info('Querying store [%s] with SPARQL query from input file [%s]' %(params[0], params[1]))
-				query_store(params[0], parseSPARQLFile(params[1]))
+				print(query_store(params[0], parseSPARQLFile(params[1])))
 	except getopt.GetoptError, err:
 		print str(err)
 		usage()
