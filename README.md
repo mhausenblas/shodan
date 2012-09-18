@@ -21,7 +21,7 @@ Now, lets add some triples. Shodan assumes you have the data in [RDF NTriples](h
 
 OK, next we want to query the store. You'd do it as follows (again, using the query provided in [test](https://github.com/mhausenblas/shodan/tree/master/data)):
 
-	$ python shodan.py -q ex1:data/query_0.sparql 
+	$ python shodan.py --query ex1:data/query_0.sparql 
 	2012-09-18T08:51:14 INFO Querying store [ex1] with SPARQL query from input file [data/query_0.sparql]
 	2012-09-18T08:51:14 DEBUG Executing HDT Jena SPARQL query with:
 	SELECT * WHERE { ?s ?p ?o } LIMIT 2
@@ -32,6 +32,15 @@ OK, next we want to query the store. You'd do it as follows (again, using the qu
 	| <file:///Users/michael/ex1> | <http://purl.org/dc/terms/created> | "\"2012-09-18\""                        |
 	| <file:///Users/michael/ex1> | <http://purl.org/dc/terms/creator> | <https://github.com/mhausenblas/shodan> |
 	--------------------------------------------------------------------------------------------------------------
+
+## Commands
+
+The commands shodan understands (all starting with `python shodan.py`) are as follows:
+
+	-h | --help ... print usage instructions
+	-i | --init STORENAME ... initialise a data store (in your home directory) with the name STORENAME
+	-a | --add STORENAME:PATH_TO_NTRIPLES_FILE .. add data from PATH_TO_NTRIPLES_FILE to STORENAME
+	-q | --query STORENAME:PATH_TO_SPARQL_FILE .. query STORENAME with PATH_TO_SPARQL_FILE
 
 
 ## Dependencies

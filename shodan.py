@@ -129,8 +129,7 @@ def usage():
 	print('Usage: python shodan.py --init {storename} | --add | --remove | --match')
 	print('Example 1 - init a datastore:\n  python shodan.py --init ex1')
 	print('Example 2 - add triples to an existing datastore:\n  python shodan.py --add ex1:data/input_data_0.nt')
-
-
+	print('Example 3 - issue a SPARQL query against existing datastore:\n  python shodan.py --query ex1:data/query_0.sparql')
 
 
 if __name__ == '__main__':
